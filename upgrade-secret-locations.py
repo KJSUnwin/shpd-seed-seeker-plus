@@ -443,4 +443,29 @@ if MARKER not in s:
 '''
     write(rel, s)
 
-print("Secret Room Locator V2.2 + artifact artwork applied successfully.")
+
+# 6. FIX GITHUB PAGES SPRITE PATHS
+# The upstream web app assumes it is hosted at domain root:
+#   /third_party/shattered-pixel-dungeon/items.png
+# Our site is hosted under /shpd-seed-seeker-plus/, so those absolute URLs 404.
+# Vite exposes the configured base path through import.meta.env.BASE_URL.
+rel = "web/src/lib/sprites.ts"
+s = read(rel)
+
+s = replace_once(
+    s,
+    "const SHEET_URL = '/third_party/shattered-pixel-dungeon/items.png'\n",
+    "const SHEET_URL = `${import.meta.env.BASE_URL}third_party/shattered-pixel-dungeon/items.png`\n",
+    "item sprite sheet URL",
+)
+
+s = replace_once(
+    s,
+    "const ICON_SHEET_URL = '/third_party/shattered-pixel-dungeon/item_icons.png'\n",
+    "const ICON_SHEET_URL = `${import.meta.env.BASE_URL}third_party/shattered-pixel-dungeon/item_icons.png`\n",
+    "ring icon sprite sheet URL",
+)
+
+write(rel, s)
+
+print("Secret Room Locator V2.3 + artwork + GitHub Pages sprite paths applied successfully.")
