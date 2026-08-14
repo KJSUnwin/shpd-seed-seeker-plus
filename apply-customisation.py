@@ -373,8 +373,8 @@ const artifactLabel = (value: ArtifactName) => prettyScoutToken(value)
         items: byDepth.get(metadata.depth) ?? [],
         metadata,
       }))
-      .sort((left, right) => left.depth - right)
-''',
+      .sort((left, right) => Number(left.depth) - Number(right.depth))
+      ''',
         "UI floor grouping")
 
     s = replace_once(
