@@ -306,6 +306,25 @@ const prettyScoutToken = (value: string) =>
 const secretRoomLabel = (value: SecretRoomName) => prettyScoutToken(value)
 const artifactLabel = (value: ArtifactName) => prettyScoutToken(value)
 
+// SHPD-ARTIFACT-SPRITES-V2.2
+// Official v3.3.8 ItemSpriteSheet indices.
+// Multi-stage artifacts use their base/unupgraded sprite.
+const artifactSpriteIndex: Record<ArtifactName, number> = {
+  cloak_of_shadows: 240,
+  master_thieves_armband: 241,
+  talisman_of_foresight: 243,
+  timekeepers_hourglass: 244,
+  alchemists_toolkit: 245,
+  unstable_spellbook: 246,
+  ethereal_chains: 248,
+  horn_of_plenty: 249,
+  chalice_of_blood: 253,
+  sandals_of_nature: 256,
+  dried_rose: 260,
+  holy_tome: 263,
+  skeleton_key: 264,
+}
+
 const secretRoomSummary = (secret: ScoutSecretRoom) => {
   const parts = [
     secretRoomLabel(secret.kind),
@@ -342,6 +361,41 @@ const secretRoomSummary = (secret: ScoutSecretRoom) => {
                       ))}
 '''
     s = replace_once(s, old_display, new_display, "Scout secret display")
+
+    old_artifact_display = '''                      <div className="d1-plus-floor-meta-row">
+                        <span className="d1-plus-floor-meta-label">Artifacts</span>
+                        <b>{metadata.artifacts.length > 0 ? metadata.artifacts.length : 'None'}</b>
+                        {metadata.artifacts.length > 0 && (
+                          <span>{metadata.artifacts.map(artifactLabel).join(', ')}</span>
+                        )}
+                      </div>
+'''
+    new_artifact_display = '''                      <div className="d1-plus-floor-meta-row d1-plus-artifact-row">
+                        <span className="d1-plus-floor-meta-label">Artifacts</span>
+                        {metadata.artifacts.length === 0 ? (
+                          <b>None</b>
+                        ) : (
+                          <div className="d1-plus-artifacts">
+                            {metadata.artifacts.map((artifact) => (
+                              <span className="d1-plus-artifact" key={artifact}>
+                                <Sprite
+                                  index={artifactSpriteIndex[artifact]}
+                                  size={28}
+                                  label={artifactLabel(artifact)}
+                                />
+                                <span>{artifactLabel(artifact)}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+'''
+    s = replace_once(
+        s,
+        old_artifact_display,
+        new_artifact_display,
+        "Scout artifact sprite display",
+    )
     write(rel, s)
 
 # 5. CSS
@@ -364,7 +418,29 @@ if MARKER not in s:
     padding-left: 0;
   }
 }
+
+/* SHPD-ARTIFACT-SPRITES-V2.2 */
+.d1-plus-artifact-row {
+  align-items: center;
+}
+
+.d1-plus-artifacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.d1-plus-artifact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.d1-plus-artifact > span:last-child {
+  opacity: 0.9;
+}
 '''
     write(rel, s)
 
-print("Secret Room Locator V2 applied successfully.")
+print("Secret Room Locator V2.2 + artifact artwork applied successfully.")
