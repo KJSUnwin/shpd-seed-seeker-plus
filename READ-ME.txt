@@ -1,0 +1,3 @@
+Upload apply-customisation.py to the repository root.
+Then replace .github/workflows/deploy-pages.yml with this deploy-pages.yml.
+Commit the workflow change; GitHub will automatically start a new build.
