@@ -191,7 +191,9 @@ rel = "crates/seedfinder-wasm/src/lib.rs"
 s = read(rel)
 
 if MARKER not in s:
-    old_floor = '''struct ScoutFloorOutput {
+    old_floor = '''#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ScoutFloorOutput {
     depth: u8,
     secret_rooms: Vec<&'static str>,
     artifacts: Vec<&'static str>,
@@ -209,6 +211,8 @@ struct ScoutSecretRoomOutput {
     wall: &'static str,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ScoutFloorOutput {
     depth: u8,
     secret_rooms: Vec<ScoutSecretRoomOutput>,
