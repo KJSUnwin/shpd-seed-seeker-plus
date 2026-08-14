@@ -1241,4 +1241,105 @@ s = replace_once(s, old, new, "empty metadata wrapper removal")
 
 write(rel, s)
 
-print("Seed Seeker Plus V2.5 clean Scout display applied successfully.")
+
+# ===========================================================================
+# 9. QUERYSTATE BACKWARD-COMPATIBILITY FIX — V2.5.1
+# ===========================================================================
+# Upstream tests and saved presets construct QueryState literals that pre-date
+# the Plus fields. Keep the new fields optional at the TS type boundary and
+# default them everywhere they are consumed.
+
+# Types: make Plus fields optional.
+rel = "web/src/lib/wasm/types.ts"
+s = read(rel)
+s = replace_once(
+    s,
+    """  requireSecretRoom: boolean
+  secretRooms: SecretRoomName[]
+  artifacts: ArtifactName[]
+""",
+    """  requireSecretRoom?: boolean
+  secretRooms?: SecretRoomName[]
+  artifacts?: ArtifactName[]
+""",
+    "optional Plus QueryState fields",
+)
+write(rel, s)
+
+# Query serialization / validation: tolerate legacy QueryState objects.
+rel = "web/src/lib/query.ts"
+s = read(rel)
+
+s = replace_once(
+    s,
+    """  if (state.requireSecretRoom) output.require_secret_room = true
+  if (state.secretRooms.length) output.secret_rooms = [...state.secretRooms]
+  if (state.artifacts.length) output.artifacts = [...state.artifacts]
+""",
+    """  if (state.requireSecretRoom) output.require_secret_room = true
+  if ((state.secretRooms ?? []).length) output.secret_rooms = [...(state.secretRooms ?? [])]
+  if ((state.artifacts ?? []).length) output.artifacts = [...(state.artifacts ?? [])]
+""",
+    "legacy-safe Plus serialization",
+)
+
+s = replace_once(
+    s,
+    """  const hasPlusRequirement = state.requireSecretRoom || state.secretRooms.length > 0 || state.artifacts.length > 0
+""",
+    """  const hasPlusRequirement =
+    Boolean(state.requireSecretRoom) ||
+    (state.secretRooms ?? []).length > 0 ||
+    (state.artifacts ?? []).length > 0
+""",
+    "legacy-safe Plus validation",
+)
+write(rel, s)
+
+# QueryPanel: normalize optional fields once, then use those arrays.
+rel = "web/src/designs/one/QueryPanel.tsx"
+s = read(rel)
+
+anchor = """  const query = useStore(queryStore)
+  const workerCount = useStore(workerCountStore)
+"""
+replacement = """  const query = useStore(queryStore)
+  const secretRooms = query.secretRooms ?? []
+  const artifacts = query.artifacts ?? []
+  const workerCount = useStore(workerCountStore)
+"""
+s = replace_once(s, anchor, replacement, "Plus QueryPanel normalization")
+
+s = replace_once(
+    s,
+    """  const plusSearchCount = Number(query.requireSecretRoom) + query.secretRooms.length + query.artifacts.length
+""",
+    """  const plusSearchCount = Number(Boolean(query.requireSecretRoom)) + secretRooms.length + artifacts.length
+""",
+    "legacy-safe Plus search count",
+)
+
+s = replace_once(
+    s,
+    """  const hasRequirements = query.requirements.length > 0 || query.requireSecretRoom || query.secretRooms.length > 0 || query.artifacts.length > 0
+""",
+    """  const hasRequirements =
+    query.requirements.length > 0 ||
+    Boolean(query.requireSecretRoom) ||
+    secretRooms.length > 0 ||
+    artifacts.length > 0
+""",
+    "legacy-safe hasRequirements",
+)
+
+# All UI reads of the optional arrays use normalized locals.
+s = s.replace("query.secretRooms.includes(room)", "secretRooms.includes(room)")
+s = s.replace("? [...query.secretRooms, room]", "? [...secretRooms, room]")
+s = s.replace(": query.secretRooms.filter((value) => value !== room)", ": secretRooms.filter((value) => value !== room)")
+s = s.replace("query.artifacts.includes(artifact)", "artifacts.includes(artifact)")
+s = s.replace("? [...query.artifacts, artifact]", "? [...artifacts, artifact]")
+s = s.replace(": query.artifacts.filter((value) => value !== artifact)", ": artifacts.filter((value) => value !== artifact)")
+
+write(rel, s)
+
+print("Seed Seeker Plus V2.5.1 backward-compatible query fields applied successfully.")
