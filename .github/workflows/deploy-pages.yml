@@ -35,6 +35,9 @@ jobs:
       - name: Add Secret Rooms + Artifacts
         run: python wrapper/apply-customisation.py app
 
+      - name: Add Secret Room Locator
+        run: python wrapper/upgrade-secret-locations.py app
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
