@@ -1,4 +1,4 @@
-name: Analyse Shattered Beta
+name: Analyse Shattered Beta - Full Comparison
 
 on:
   workflow_dispatch:
@@ -14,8 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download official v4.0.0 BETA-3 JAR
+      - name: Download official Shattered builds
         run: |
+          curl -L --fail --retry 3 \
+            -o stable.jar \
+            https://github.com/00-Evan/shattered-pixel-dungeon/releases/download/v3.3.8/ShatteredPD-v3.3.8-Java.jar
+
           curl -L --fail --retry 3 \
             -o beta.jar \
             https://github.com/00-Evan/shattered-pixel-dungeon/releases/download/4.0.0-beta/ShatteredPD-v4.0.0-BETA-3-Java.jar
@@ -26,37 +30,50 @@ jobs:
             -o cfr.jar \
             https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar
 
-      - name: Decompile beta
+      - name: Decompile stable and beta
         run: |
-          mkdir -p decompiled
-          java -jar cfr.jar beta.jar \
-            --outputdir decompiled \
+          mkdir -p decompiled-stable decompiled-beta
+
+          java -jar cfr.jar stable.jar \
+            --outputdir decompiled-stable \
             --silent true
 
-      - name: Keep generation-relevant source
+          java -jar cfr.jar beta.jar \
+            --outputdir decompiled-beta \
+            --silent true
+
+      - name: Build complete comparison package
         run: |
-          mkdir -p beta-source/items
+          mkdir -p comparison/stable comparison/beta
 
-          BASE=decompiled/com/shatteredpixel/shatteredpixeldungeon
+          STABLE=decompiled-stable/com/shatteredpixel/shatteredpixeldungeon
+          BETA=decompiled-beta/com/shatteredpixel/shatteredpixeldungeon
 
-          cp "$BASE/Dungeon.java" beta-source/ 2>/dev/null || true
-          cp "$BASE/Challenges.java" beta-source/ 2>/dev/null || true
+          cp -R "$STABLE"/. comparison/stable/
+          cp -R "$BETA"/. comparison/beta/
 
-          cp -R "$BASE/levels" beta-source/ 2>/dev/null || true
+          # Exact same-decompiler comparison. diff returns 1 when differences
+          # are found, which is expected, so do not fail the workflow.
+          diff -ruN comparison/stable comparison/beta \
+            > comparison/v3.3.8-vs-v4.0.0-BETA-3.diff || true
 
-          cp "$BASE/items/Generator.java" beta-source/items/ 2>/dev/null || true
-          cp "$BASE/items/Item.java" beta-source/items/ 2>/dev/null || true
+          find comparison/stable -type f | sort \
+            > comparison/stable-filelist.txt
 
-          cp -R "$BASE/items/trinkets" beta-source/items/ 2>/dev/null || true
-          cp -R "$BASE/items/artifacts" beta-source/items/ 2>/dev/null || true
-          cp -R "$BASE/items/rings" beta-source/items/ 2>/dev/null || true
-          cp -R "$BASE/items/wands" beta-source/items/ 2>/dev/null || true
+          find comparison/beta -type f | sort \
+            > comparison/beta-filelist.txt
 
-          find beta-source -type f | sort > beta-source/FILELIST.txt
+          {
+            echo "Stable: Shattered Pixel Dungeon v3.3.8"
+            echo "Beta:   Shattered Pixel Dungeon v4.0.0-BETA-3"
+            echo
+            echo "Changed Java files:"
+            diff -qr comparison/stable comparison/beta || true
+          } > comparison/CHANGED-FILES.txt
 
-      - name: Upload decompiled generation source
+      - name: Upload full beta comparison
         uses: actions/upload-artifact@v4
         with:
-          name: beta-generation-source
-          path: beta-source
-          retention-days: 1
+          name: shpd-beta-full-comparison
+          path: comparison
+          retention-days: 2
