@@ -1,0 +1,62 @@
+name: Analyse Shattered Beta
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/analyse-beta.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download official v4.0.0 BETA-3 JAR
+        run: |
+          curl -L --fail --retry 3 \
+            -o beta.jar \
+            https://github.com/00-Evan/shattered-pixel-dungeon/releases/download/4.0.0-beta/ShatteredPD-v4.0.0-BETA-3-Java.jar
+
+      - name: Download CFR decompiler
+        run: |
+          curl -L --fail --retry 3 \
+            -o cfr.jar \
+            https://repo1.maven.org/maven2/org/benf/cfr/0.152/cfr-0.152.jar
+
+      - name: Decompile beta
+        run: |
+          mkdir -p decompiled
+          java -jar cfr.jar beta.jar \
+            --outputdir decompiled \
+            --silent true
+
+      - name: Keep generation-relevant source
+        run: |
+          mkdir -p beta-source/items
+
+          BASE=decompiled/com/shatteredpixel/shatteredpixeldungeon
+
+          cp "$BASE/Dungeon.java" beta-source/ 2>/dev/null || true
+          cp "$BASE/Challenges.java" beta-source/ 2>/dev/null || true
+
+          cp -R "$BASE/levels" beta-source/ 2>/dev/null || true
+
+          cp "$BASE/items/Generator.java" beta-source/items/ 2>/dev/null || true
+          cp "$BASE/items/Item.java" beta-source/items/ 2>/dev/null || true
+
+          cp -R "$BASE/items/trinkets" beta-source/items/ 2>/dev/null || true
+          cp -R "$BASE/items/artifacts" beta-source/items/ 2>/dev/null || true
+          cp -R "$BASE/items/rings" beta-source/items/ 2>/dev/null || true
+          cp -R "$BASE/items/wands" beta-source/items/ 2>/dev/null || true
+
+          find beta-source -type f | sort > beta-source/FILELIST.txt
+
+      - name: Upload decompiled generation source
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-generation-source
+          path: beta-source
+          retention-days: 1
