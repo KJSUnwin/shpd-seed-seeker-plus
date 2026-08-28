@@ -25,18 +25,33 @@ jobs:
         with:
           path: wrapper
 
-      - name: Get SHPD Seed Seeker
+      # Pin the upstream release. Pulling "main" made the site change underneath us.
+      - name: Get stable Seed Seeker
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: main
-          path: app
+          ref: cd0fddd74a39d0c174b871f7892ff0c6fad84a8d
+          path: stable
 
-      - name: Add Secret Rooms + Artifacts
-        run: python wrapper/apply-customisation.py app
+      - name: Get beta Seed Seeker base
+        uses: actions/checkout@v4
+        with:
+          repository: akhial/shpd-seed-seeker
+          ref: cd0fddd74a39d0c174b871f7892ff0c6fad84a8d
+          path: beta
 
-      - name: Add Secret Room Locator
-        run: python wrapper/upgrade-secret-locations.py app
+      - name: Apply Plus features to stable
+        run: |
+          python wrapper/apply-customisation.py stable
+          python wrapper/upgrade-secret-locations.py stable
+          python wrapper/upgrade-v4-beta.py shared stable
+
+      - name: Apply Plus features and BETA-3 generator
+        run: |
+          python wrapper/apply-customisation.py beta
+          python wrapper/upgrade-secret-locations.py beta
+          python wrapper/upgrade-v4-beta.py shared beta
+          python wrapper/upgrade-v4-beta.py beta beta
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -52,20 +67,52 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: app/web/package-lock.json
 
-      - name: Build WebAssembly
-        working-directory: app
+      - name: Build stable WebAssembly
+        working-directory: stable
         run: ./scripts/build-web-wasm.sh
 
-      - name: Install website dependencies
-        working-directory: app/web
+      - name: Install stable website dependencies
+        working-directory: stable/web
         run: npm ci
 
-      - name: Build website
-        working-directory: app/web
+      - name: Build stable website
+        working-directory: stable/web
+        run: npm run build -- --base "/shpd-seed-seeker-plus/stable/"
+
+      - name: Build beta WebAssembly
+        working-directory: beta
+        run: ./scripts/build-web-wasm.sh
+
+      - name: Install beta website dependencies
+        working-directory: beta/web
+        run: npm ci
+
+      - name: Build beta website
+        working-directory: beta/web
         run: npm run build -- --base "/shpd-seed-seeker-plus/"
+
+      - name: Combine versions and add version switch
+        run: |
+          mkdir -p beta/web/dist/stable
+          cp -R stable/web/dist/. beta/web/dist/stable/
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def add_switch(path, current, href, other):
+              p = Path(path)
+              s = p.read_text(encoding="utf-8")
+              block = f'''
+          <div style="position:fixed;right:10px;bottom:10px;z-index:9999;background:#151922;border:1px solid #485064;border-radius:10px;padding:7px 10px;font:12px system-ui;color:#e9edf5;box-shadow:0 3px 14px #0008">
+            <strong>{current}</strong><span style="opacity:.55;padding:0 5px">|</span><a href="{href}" style="color:#75e6bd;text-decoration:none">{other}</a>
+          </div>
+          '''
+              p.write_text(s.replace("</body>", block + "\n</body>"), encoding="utf-8")
+
+          add_switch("beta/web/dist/index.html", "SHPD v4.0.0-BETA-3", "stable/", "Use v3.3.8 Stable")
+          add_switch("beta/web/dist/stable/index.html", "SHPD v3.3.8 Stable", "../", "Use v4.0.0-BETA-3")
+          PY
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -73,7 +120,7 @@ jobs:
       - name: Upload finished website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: app/web/dist
+          path: beta/web/dist
 
   deploy:
     environment:
