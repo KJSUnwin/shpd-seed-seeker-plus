@@ -30,14 +30,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: cd0fddd74a39d0c174b871f7892ff0c6fad84a8d
+          ref: 695b357f6ae76bb0e1792e10d4b8566d2ee8047c
           path: stable
 
       - name: Get beta Seed Seeker base
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: cd0fddd74a39d0c174b871f7892ff0c6fad84a8d
+          ref: 695b357f6ae76bb0e1792e10d4b8566d2ee8047c
           path: beta
 
       - name: Apply Plus features to stable
