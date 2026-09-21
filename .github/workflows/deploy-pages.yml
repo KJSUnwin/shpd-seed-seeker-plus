@@ -52,25 +52,16 @@ jobs:
         working-directory: app
         run: ./scripts/build-web-wasm.sh
 
-      - name: Install stable website dependencies
-        working-directory: app/web
-        run: npm ci
+      - name: Enable Corepack
+        run: corepack enable
 
-      - name: Build stable website
+      - name: Install website dependencies
         working-directory: app/web
-        run: npm run build -- --base "/shpd-seed-seeker-plus/"
+        run: pnpm install --frozen-lockfile
 
-      - name: Build beta WebAssembly
-        working-directory: app
-        run: ./scripts/build-web-wasm.sh
-
-      - name: Install beta website dependencies
+      - name: Build website
         working-directory: app/web
-        run: npm ci
-
-      - name: Build beta website
-        working-directory: app/web
-        run: npm run build -- --base "/shpd-seed-seeker-plus/"
+        run: pnpm run build -- --base "/shpd-seed-seeker-plus/"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
