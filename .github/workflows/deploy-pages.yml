@@ -39,21 +39,20 @@ jobs:
         run: |
           mkdir -p crates/seedfinder-core/examples
           cat > crates/seedfinder-core/examples/plus_diag.rs <<'RS'
-          use shpd_seedfinder_core::main_world::generate_main_world;
+          use shpd_seedfinder_core::challenges::Challenges;
+          use shpd_seedfinder_core::main_world::generate_main_world_with_challenges;
+          use shpd_seedfinder_core::model::ItemSource;
           use shpd_seedfinder_core::seed::DungeonSeed;
           fn main() {
               let seed = DungeonSeed::from_code("CDS-KMF-DQF").unwrap();
-              let world = generate_main_world(seed, 19).unwrap();
-              println!("SEED {} {}", seed.to_code(), seed.value());
-              println!("QUESTS {:#?}", world.quests);
-              for item in &world.items {
-                  if item.depth <= 5 || matches!(item.source,
-                      shpd_seedfinder_core::model::ItemSource::Mimic |
-                      shpd_seedfinder_core::model::ItemSource::GoldenMimic |
-                      shpd_seedfinder_core::model::ItemSource::CrystalMimic) {
-                      println!("ITEM depth={} item={:?} +{} source={:?} secret={} effect={:?} cursed={}",
-                          item.depth, item.item, item.upgrade, item.source, item.secret, item.effect, item.cursed);
-                  }
+              for bits in [0u16, 8, 32, 64, 8|32, 8|64, 32|64, 8|32|64] {
+                  let ch = Challenges::new(bits).unwrap();
+                  let world = generate_main_world_with_challenges(seed, 19, ch).unwrap();
+                  let ghost = world.quests.ghost.map(|q| q.depth);
+                  let mimics: Vec<_> = world.items.iter().filter(|i|
+                      i.depth == 3 && matches!(i.source, ItemSource::Mimic | ItemSource::GoldenMimic | ItemSource::CrystalMimic)
+                  ).map(|i| format!("{:?}+{}", i.item, i.upgrade)).collect();
+                  println!("CASE bits={} ghost={:?} f3_mimics={:?}", bits, ghost, mimics);
               }
           }
           RS
