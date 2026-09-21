@@ -26,15 +26,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: 695b357f6ae76bb0e1792e10d4b8566d2ee8047c
+          ref: c44642817ecc93da381372b15f9efd0f5b71448a
           path: app
-
-      - name: Apply complete Plus and BETA-3 compatibility
-        run: |
-          python wrapper/apply-customisation.py app
-          python wrapper/upgrade-secret-locations.py app
-          python wrapper/upgrade-v4-beta.py shared app
-          python wrapper/upgrade-v4-beta.py beta app
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
