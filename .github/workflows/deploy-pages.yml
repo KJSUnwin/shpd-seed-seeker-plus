@@ -57,11 +57,11 @@ jobs:
 
       - name: Install website dependencies
         working-directory: app/web
-        run: pnpm install --frozen-lockfile
+        run: pnpm exec vp install
 
       - name: Build website
         working-directory: app/web
-        run: pnpm run build -- --base "/shpd-seed-seeker-plus/"
+        run: pnpm exec vp build --base "/shpd-seed-seeker-plus/"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
