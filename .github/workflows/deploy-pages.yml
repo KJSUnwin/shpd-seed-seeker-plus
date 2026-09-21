@@ -43,25 +43,20 @@ jobs:
         with:
           version: latest
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - name: Install Vite+
+        uses: voidzero-dev/setup-vp@v1.18.0
         with:
           node-version: 22
+          working-directory: app/web
+          cache: true
 
-      - name: Build stable WebAssembly
+      - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install website dependencies
-        working-directory: app/web
-        run: pnpm install --frozen-lockfile
-
       - name: Build website
         working-directory: app/web
-        run: pnpm exec vite build --base "/shpd-seed-seeker-plus/"
+        run: vp build --base "/shpd-seed-seeker-plus/"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
