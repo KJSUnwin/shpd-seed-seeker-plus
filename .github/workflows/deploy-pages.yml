@@ -59,7 +59,7 @@ jobs:
                       shpd_seedfinder_core::model::ItemSource::GoldenMimic |
                       shpd_seedfinder_core::model::ItemSource::CrystalMimic) {
                       println!("ITEM depth={} item={:?} +{} source={:?} secret={} effect={:?} cursed={}",
-                          item.depth, item.item, item.displayed_upgrade(), item.source, item.secret, item.effect, item.cursed);
+                          item.depth, item.item, item.upgrade, item.source, item.secret, item.effect, item.cursed);
                   }
               }
           }
