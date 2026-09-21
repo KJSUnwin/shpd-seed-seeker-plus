@@ -51,6 +51,9 @@ jobs:
           working-directory: app/web
           cache: true
 
+      - name: Apply v4 Plus layer
+        run: python wrapper/apply-v4-plus.py app
+
       - name: Diagnose parity seed CDS-KMF-DQF
         working-directory: app
         run: |
