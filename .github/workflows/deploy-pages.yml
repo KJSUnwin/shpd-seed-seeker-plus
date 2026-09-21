@@ -57,11 +57,11 @@ jobs:
 
       - name: Install website dependencies
         working-directory: app/web
-        run: pnpm exec vp install
+        run: pnpm exec vite-plus install
 
       - name: Build website
         working-directory: app/web
-        run: pnpm exec vp build --base "/shpd-seed-seeker-plus/"
+        run: pnpm exec vite-plus build --base "/shpd-seed-seeker-plus/"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
