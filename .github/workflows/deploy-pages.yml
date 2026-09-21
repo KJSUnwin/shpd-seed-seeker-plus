@@ -73,14 +73,10 @@ jobs:
           from pathlib import Path
           p=Path("app/web/src/designs/one/LevelMapView.tsx")
           s=p.read_text()
-          old='''  const title =
-    branch === 0
-      ? `Floor ${depth} layout`
-      : bundle?.map.kind === "imp_vault"
-        ? "Imp Vault"
-        : "Blacksmith Mine";
+          anchor='''  const toolbar = (
+    <div className="d1-map-toolbar">
 '''
-          new=old+'''  const secretSummary =
+          insert='''  const secretSummary =
     bundle && branch === 0 && bundle.map.secretRooms.length > 0
       ? bundle.map.secretRooms.map((room, index) => {
           const [left, top, right, bottom] = room;
@@ -96,17 +92,19 @@ jobs:
             const y = Math.floor(door / bundle.map.width);
             wall = y === top ? "N" : y === bottom ? "S" : x === left ? "W" : x === right ? "E" : "?";
           }
-          return `Secret room ${index + 1} · ${doors.length} ${doors.length === 1 ? "door" : "doors"} · ${wall}`;
+          return "Secret room " + (index + 1) + " · " + doors.length + " " +
+            (doors.length === 1 ? "door" : "doors") + " · " + wall;
         })
       : [];
+
 '''
-          if old not in s:
-              raise SystemExit("LevelMapView title anchor changed")
-          s=s.replace(old,new,1)
-          old2='''      {toolbar}
+          if anchor not in s:
+              raise SystemExit("toolbar anchor changed")
+          s=s.replace(anchor,insert+anchor,1)
+          anchor2='''      {toolbar}
       <div className="d1-map-stage">
 '''
-          new2='''      {toolbar}
+          insert2='''      {toolbar}
       {secretSummary.length > 0 && (
         <div className="d1-map-secret-summary">
           {secretSummary.map((line) => <div key={line}>{line}</div>)}
@@ -114,26 +112,23 @@ jobs:
       )}
       <div className="d1-map-stage">
 '''
-          if old2 not in s:
-              raise SystemExit("LevelMapView toolbar anchor changed")
-          s=s.replace(old2,new2,1)
+          if anchor2 not in s:
+              raise SystemExit("render anchor changed")
+          s=s.replace(anchor2,insert2,1)
           p.write_text(s)
-
           p=Path("app/web/src/designs/one/level-map.css")
-          s=p.read_text()
-          s += """
-          .d1-map-secret-summary {
-            margin: 0 12px 8px;
-            padding: 6px 9px;
-            border-radius: 7px;
-            font-size: 12px;
-            font-weight: 650;
-            line-height: 1.45;
-            background: color-mix(in srgb, var(--region) 9%, transparent);
-            border: 1px solid color-mix(in srgb, var(--region) 30%, transparent);
-          }
-          """
-          p.write_text(s)
+          p.write_text(p.read_text()+"""
+.d1-map-secret-summary {
+  margin: 0 12px 8px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--region) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--region) 30%, transparent);
+}
+""")
           PY
 
       - name: Build WebAssembly
