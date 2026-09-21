@@ -26,29 +26,12 @@ jobs:
           path: wrapper
 
       # Pin the upstream release. Pulling "main" made the site change underneath us.
-      - name: Get stable Seed Seeker
-        uses: actions/checkout@v4
-        with:
-          repository: akhial/shpd-seed-seeker
-          ref: 124f72a3bba25e644f7e9003d8914b4af7f09a37
-          path: stable
-
       - name: Get current v4 Seed Seeker
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
           ref: 124f72a3bba25e644f7e9003d8914b4af7f09a37
-          path: beta
-
-      - name: Apply Plus features to stable
-        run: |
-          python wrapper/apply-customisation.py stable
-          python wrapper/upgrade-secret-locations.py stable
-
-      - name: Apply Plus features to current v4
-        run: |
-          python wrapper/apply-customisation.py beta
-          python wrapper/upgrade-secret-locations.py beta
+          path: app
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -66,50 +49,28 @@ jobs:
           node-version: 22
 
       - name: Build stable WebAssembly
-        working-directory: stable
+        working-directory: app
         run: ./scripts/build-web-wasm.sh
 
       - name: Install stable website dependencies
-        working-directory: stable/web
+        working-directory: app/web
         run: npm ci
 
       - name: Build stable website
-        working-directory: stable/web
-        run: npm run build -- --base "/shpd-seed-seeker-plus/stable/"
+        working-directory: app/web
+        run: npm run build -- --base "/shpd-seed-seeker-plus/"
 
       - name: Build beta WebAssembly
-        working-directory: beta
+        working-directory: app
         run: ./scripts/build-web-wasm.sh
 
       - name: Install beta website dependencies
-        working-directory: beta/web
+        working-directory: app/web
         run: npm ci
 
       - name: Build beta website
-        working-directory: beta/web
+        working-directory: app/web
         run: npm run build -- --base "/shpd-seed-seeker-plus/"
-
-      - name: Combine versions and add version switch
-        run: |
-          mkdir -p beta/web/dist/stable
-          cp -R stable/web/dist/. beta/web/dist/stable/
-
-          python - <<'PY'
-          from pathlib import Path
-
-          def add_switch(path, current, href, other):
-              p = Path(path)
-              s = p.read_text(encoding="utf-8")
-              block = f'''
-          <div style="position:fixed;right:10px;bottom:10px;z-index:9999;background:#151922;border:1px solid #485064;border-radius:10px;padding:7px 10px;font:12px system-ui;color:#e9edf5;box-shadow:0 3px 14px #0008">
-            <strong>{current}</strong><span style="opacity:.55;padding:0 5px">|</span><a href="{href}" style="color:#75e6bd;text-decoration:none">{other}</a>
-          </div>
-          '''
-              p.write_text(s.replace("</body>", block + "\n</body>"), encoding="utf-8")
-
-          add_switch("beta/web/dist/index.html", "SHPD v4.0.0", "stable/", "Use legacy version")
-          add_switch("beta/web/dist/stable/index.html", "Legacy generator", "../", "Use SHPD v4.0.0")
-          PY
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -117,7 +78,7 @@ jobs:
       - name: Upload finished website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: beta/web/dist
+          path: app/web/dist
 
   deploy:
     environment:
