@@ -1,4 +1,4 @@
-name: Validate Seed Seeker Plus BETA-3
+name: Validate complete Seed Seeker Plus v4
 
 on:
   push:
@@ -22,39 +22,65 @@ jobs:
         with:
           path: wrapper
 
-      - name: Get known BETA-3 base
+      - name: Get current v4 Seed Seeker
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: aa5fe80890bed78a5854f01f6945180a01671517
+          ref: 124f72a3bba25e644f7e9003d8914b4af7f09a37
           path: app
+
+      - name: Fix GitHub Pages item pictures
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("app/web/src/lib/sprites.ts")
+          s=p.read_text()
+          s=s.replace('const SHEET_URL = "/third_party/shattered-pixel-dungeon/items.png";',
+                      'const SHEET_URL = \`${import.meta.env.BASE_URL}third_party/shattered-pixel-dungeon/items.png\`;')
+          s=s.replace('const ICON_SHEET_URL = "/third_party/shattered-pixel-dungeon/item_icons.png";',
+                      'const ICON_SHEET_URL = \`${import.meta.env.BASE_URL}third_party/shattered-pixel-dungeon/item_icons.png\`;')
+          p.write_text(s)
+          PY
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Diagnose CDS-KMF-DQF against BETA-3
-        working-directory: app
-        run: |
-          mkdir -p crates/seedfinder-core/examples
-          cat > crates/seedfinder-core/examples/plus_diag.rs <<'RS'
-          use shpd_seedfinder_core::challenges::Challenges;
-          use shpd_seedfinder_core::main_world::generate_main_world_with_challenges;
-          use shpd_seedfinder_core::model::ItemSource;
-          use shpd_seedfinder_core::seed::DungeonSeed;
-          fn main() {
-              let seed = DungeonSeed::from_code("CDS-KMF-DQF").unwrap();
-              for bits in [0u16, 8, 32, 64, 8|32, 8|64, 32|64, 8|32|64] {
-                  let ch = Challenges::new(bits).unwrap();
-                  let world = generate_main_world_with_challenges(seed, 19, ch).unwrap();
-                  let ghost = world.quests.ghost.map(|q| q.depth);
-                  let mimics: Vec<_> = world.items.iter().filter(|i|
-                      i.depth == 3 && matches!(i.source, ItemSource::Mimic | ItemSource::GoldenMimic | ItemSource::CrystalMimic)
-                  ).map(|i| format!("{:?}+{}", i.item, i.upgrade)).collect();
-                  println!("CASE bits={} ghost={:?} f3_mimics={:?}", bits, ghost, mimics);
-              }
-          }
-          RS
-          cargo run -q -p shpd-seedfinder-core --example plus_diag
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
 
+      - name: Install Vite+
+        uses: voidzero-dev/setup-vp@v1.18.0
+        with:
+          node-version: 22
+          working-directory: app/web
+          cache: true
+
+      - name: Run core tests
+        working-directory: app
+        run: cargo test -p shpd-seedfinder-core
+
+      - name: Build browser engine
+        working-directory: app
+        run: ./scripts/build-web-wasm.sh
+
+      - name: Check web app
+        working-directory: app/web
+        run: vp check
+
+      - name: Test web app
+        working-directory: app/web
+        run: vp test
+
+      - name: Build web app
+        working-directory: app/web
+        run: vp build --base "/shpd-seed-seeker-plus/"
+
+      - name: Verify pictures are packaged
+        run: |
+          test -f app/web/dist/third_party/shattered-pixel-dungeon/items.png
+          test -f app/web/dist/third_party/shattered-pixel-dungeon/item_icons.png
+          grep -R "shpd-seed-seeker-plus/third_party/shattered-pixel-dungeon/items.png" app/web/dist/assets/*.js
