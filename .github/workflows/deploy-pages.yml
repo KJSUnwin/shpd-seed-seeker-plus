@@ -51,6 +51,31 @@ jobs:
           working-directory: app/web
           cache: true
 
+      - name: Diagnose parity seed CDS-KMF-DQF
+        working-directory: app
+        run: |
+          mkdir -p crates/seedfinder-core/examples
+          cat > crates/seedfinder-core/examples/plus_diag.rs <<'RS'
+          use shpd_seedfinder_core::main_world::generate_main_world;
+          use shpd_seedfinder_core::seed::DungeonSeed;
+          fn main() {
+              let seed = DungeonSeed::from_code("CDS-KMF-DQF").unwrap();
+              let world = generate_main_world(seed, 19).unwrap();
+              println!("SEED {} {}", seed.to_code(), seed.value());
+              println!("QUESTS {:#?}", world.quests);
+              for item in &world.items {
+                  if item.depth <= 5 || matches!(item.source,
+                      shpd_seedfinder_core::model::ItemSource::Mimic |
+                      shpd_seedfinder_core::model::ItemSource::GoldenMimic |
+                      shpd_seedfinder_core::model::ItemSource::CrystalMimic) {
+                      println!("ITEM depth={} item={:?} +{} source={:?} secret={} effect={:?} cursed={}",
+                          item.depth, item.item, item.displayed_upgrade(), item.source, item.secret, item.effect, item.cursed);
+                  }
+              }
+          }
+          RS
+          cargo run -q -p shpd-seedfinder-core --example plus_diag
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
