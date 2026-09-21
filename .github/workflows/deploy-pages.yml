@@ -1,60 +1,47 @@
-name: Build and publish Seed Seeker Plus
+name: Validate Seed Seeker Plus BETA-3
 
 on:
   push:
     branches:
-      - main
       - v4-port
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: v4-port-validation
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Get this repository
+      - name: Get wrapper
         uses: actions/checkout@v4
         with:
           path: wrapper
 
-      # Pin the upstream release. Pulling "main" made the site change underneath us.
-      - name: Get current v4 Seed Seeker
+      - name: Get known BETA-3 base
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: 124f72a3bba25e644f7e9003d8914b4af7f09a37
+          ref: 695b357f6ae76bb0e1792e10d4b8566d2ee8047c
           path: app
+
+      - name: Apply complete Plus and BETA-3 compatibility
+        run: |
+          python wrapper/apply-customisation.py app
+          python wrapper/upgrade-secret-locations.py app
+          python wrapper/upgrade-v4-beta.py shared app
+          python wrapper/upgrade-v4-beta.py beta app
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: latest
-
-      - name: Install Vite+
-        uses: voidzero-dev/setup-vp@v1.18.0
-        with:
-          node-version: 22
-          working-directory: app/web
-          cache: true
-
-      - name: Apply v4 Plus layer
-        run: python wrapper/apply-v4-plus.py app
-
-      - name: Diagnose parity seed CDS-KMF-DQF
+      - name: Diagnose CDS-KMF-DQF against BETA-3
         working-directory: app
         run: |
           mkdir -p crates/seedfinder-core/examples
@@ -79,32 +66,24 @@ jobs:
           RS
           cargo run -q -p shpd-seedfinder-core --example plus_diag
 
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
 
+      - name: Install web dependencies
+        working-directory: app/web
+        run: npm ci
+
       - name: Build website
         working-directory: app/web
-        run: vp build --base "/shpd-seed-seeker-plus/"
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload finished website
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: app/web/dist
-
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Publish website
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: npm run build -- --base "/shpd-seed-seeker-plus/"
