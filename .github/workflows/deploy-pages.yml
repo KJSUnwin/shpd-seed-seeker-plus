@@ -59,24 +59,3 @@ jobs:
           RS
           cargo run -q -p shpd-seedfinder-core --example plus_diag
 
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: latest
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Build WebAssembly
-        working-directory: app
-        run: ./scripts/build-web-wasm.sh
-
-      - name: Install web dependencies
-        working-directory: app/web
-        run: npm ci
-
-      - name: Build website
-        working-directory: app/web
-        run: npm run build -- --base "/shpd-seed-seeker-plus/"
