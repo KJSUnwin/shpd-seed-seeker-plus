@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v4-port
   workflow_dispatch:
 
 permissions:
@@ -67,6 +68,7 @@ jobs:
           path: app/web/dist
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
