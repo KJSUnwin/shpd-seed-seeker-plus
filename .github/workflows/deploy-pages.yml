@@ -67,6 +67,75 @@ jobs:
           p.write_text(s, encoding="utf-8")
           PY
 
+      - name: Add concise secret-room summaries
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("app/web/src/designs/one/LevelMapView.tsx")
+          s=p.read_text()
+          old='''  const title =
+    branch === 0
+      ? `Floor ${depth} layout`
+      : bundle?.map.kind === "imp_vault"
+        ? "Imp Vault"
+        : "Blacksmith Mine";
+'''
+          new=old+'''  const secretSummary =
+    bundle && branch === 0 && bundle.map.secretRooms.length > 0
+      ? bundle.map.secretRooms.map((room, index) => {
+          const [left, top, right, bottom] = room;
+          const doors = bundle.map.secretDoors.filter((cell) => {
+            const x = cell % bundle.map.width;
+            const y = Math.floor(cell / bundle.map.width);
+            return x >= left && x <= right && y >= top && y <= bottom;
+          });
+          const door = doors[0];
+          let wall = "?";
+          if (door !== undefined) {
+            const x = door % bundle.map.width;
+            const y = Math.floor(door / bundle.map.width);
+            wall = y === top ? "N" : y === bottom ? "S" : x === left ? "W" : x === right ? "E" : "?";
+          }
+          return `Secret room ${index + 1} · ${doors.length} ${doors.length === 1 ? "door" : "doors"} · ${wall}`;
+        })
+      : [];
+'''
+          if old not in s:
+              raise SystemExit("LevelMapView title anchor changed")
+          s=s.replace(old,new,1)
+          old2='''      {toolbar}
+      <div className="d1-map-stage">
+'''
+          new2='''      {toolbar}
+      {secretSummary.length > 0 && (
+        <div className="d1-map-secret-summary">
+          {secretSummary.map((line) => <div key={line}>{line}</div>)}
+        </div>
+      )}
+      <div className="d1-map-stage">
+'''
+          if old2 not in s:
+              raise SystemExit("LevelMapView toolbar anchor changed")
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+
+          p=Path("app/web/src/designs/one/level-map.css")
+          s=p.read_text()
+          s += """
+          .d1-map-secret-summary {
+            margin: 0 12px 8px;
+            padding: 6px 9px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.45;
+            background: color-mix(in srgb, var(--region) 9%, transparent);
+            border: 1px solid color-mix(in srgb, var(--region) 30%, transparent);
+          }
+          """
+          p.write_text(s)
+          PY
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
