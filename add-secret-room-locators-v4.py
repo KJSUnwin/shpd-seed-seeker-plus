@@ -26,7 +26,6 @@ pub struct SecretRoomLocator {
     pub water: bool,
     pub pit: bool,
     pub wall: &'static str,
-}
 '''
 if new not in s:
     if old not in s: raise SystemExit("locator struct anchor changed")
