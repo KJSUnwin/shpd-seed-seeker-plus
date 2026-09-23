@@ -14,9 +14,14 @@ new='''    /// Secret-room class names in the same order as secret_rooms.
     /// Actionable locator data in the same order as secret_rooms.
     pub secret_room_locators: Vec<SecretRoomLocator>,
     pub traps: Vec<MapTrap>,
-}
+'''
+if new not in s:
+    if old not in s: raise SystemExit("locator field anchor changed")
+    s=s.replace(old,new,1)
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+locator_anchor='''/// Selects the branch's terrain atlas; both quest branches use game branch 1.
+'''
+locator_struct='''#[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "json-query", derive(serde::Serialize))]
 #[cfg_attr(feature = "json-query", serde(rename_all = "camelCase"))]
 pub struct SecretRoomLocator {
@@ -27,10 +32,11 @@ pub struct SecretRoomLocator {
     pub pit: bool,
     pub wall: &'static str,
 }
+
 '''
-if new not in s:
-    if old not in s: raise SystemExit("locator struct anchor changed")
-    s=s.replace(old,new,1)
+if "pub struct SecretRoomLocator" not in s:
+    if locator_anchor not in s: raise SystemExit("locator struct anchor changed")
+    s=s.replace(locator_anchor,locator_struct+locator_anchor,1)
 
 # helpers before snapshot
 anchor='''#[allow(clippy::too_many_arguments)]
