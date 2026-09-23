@@ -70,6 +70,9 @@ jobs:
       - name: Apply secret-room summary
         run: python wrapper/apply-secret-summary-v4.py app
 
+      - name: Add secret-room type names
+        run: python wrapper/add-secret-room-kinds-v4.py app
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
