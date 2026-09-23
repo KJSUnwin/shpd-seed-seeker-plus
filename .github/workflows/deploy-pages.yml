@@ -73,6 +73,9 @@ jobs:
       - name: Add secret-room type names
         run: python wrapper/add-secret-room-kinds-v4.py app
 
+      - name: Add full secret-room locator detail
+        run: python wrapper/add-secret-room-locators-v4.py app
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
