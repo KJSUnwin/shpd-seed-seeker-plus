@@ -54,7 +54,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path("app/web/src/lib/sprites.ts")
+          p = Path("app/web/src/shared/sprites/sprites.ts")
           s = p.read_text(encoding="utf-8")
           s = s.replace(
               'const SHEET_URL = "/third_party/shattered-pixel-dungeon/items.png";',
@@ -66,15 +66,6 @@ jobs:
           )
           p.write_text(s, encoding="utf-8")
           PY
-
-      - name: Apply secret-room summary
-        run: python wrapper/apply-secret-summary-v4.py app
-
-      - name: Add secret-room type names
-        run: python wrapper/add-secret-room-kinds-v4.py app
-
-      - name: Add full secret-room locator detail
-        run: python wrapper/add-secret-room-locators-v4.py app
 
       - name: Build WebAssembly
         working-directory: app
