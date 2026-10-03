@@ -67,6 +67,9 @@ jobs:
           p.write_text(s, encoding="utf-8")
           PY
 
+      - name: Port Plus secret-room summaries
+        run: python wrapper/port-plus-v020.py app
+
       - name: Build WebAssembly
         working-directory: app
         run: ./scripts/build-web-wasm.sh
