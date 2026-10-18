@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: akhial/shpd-seed-seeker
-          ref: efd1374fd5a61e4ded102a2d48ebe3a5988ef8c2
+          ref: 14e4ede1f1393797c942dce6aa4e03bf3c3877ea
           path: app
 
       - name: Install Rust
